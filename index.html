@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#CC2222">
+  <title>WeGo VTI – Unfallaufnahme</title>
+  <link rel="manifest" href="manifest.json">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    :root {
+      /* WeGo VTI CI */
+      --ci-blue:    #A7BECD;   /* Sidebar / Akzent */
+      --ci-red:     #E51723;   /* Logo Rot / Alarm */
+      --ci-green:   #099A48;   /* Logo Grün / Erfolg */
+      --ci-cobalt:  #0560AB;   /* Logo Blau */
+      --ci-dark:    #1D1D1B;   /* Schrift */
+      --ci-mid:     #6B8FA0;   /* Dunkleres Blau */
+      --ci-light:   #D8E6EE;   /* Helles Blau-Grau */
+
+      /* App-Aliases */
+      --red:        #E51723;
+      --red-dark:   #B81019;
+      --red-light:  #F04050;
+      --green:      #099A48;
+      --yellow:     #F0A500;
+      --bg:         #F2F5F7;   /* Helles CI-Hintergrund */
+      --surface:    #FFFFFF;
+      --surface2:   #EBF1F5;
+      --border:     #C8D8E2;
+      --text:       #1D1D1B;
+      --muted:      #6B8090;
+      --r:          8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { font-family: Tahoma, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* HEADER */
+    .hdr { background: #fff; border-bottom: 3px solid var(--ci-blue); padding: 8px 16px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,.1); }
+    .hdr-logo img { height: 28px; width: auto; display: block; object-fit: contain; }
+    .hdr-divider { width: 1px; height: 32px; background: var(--ci-light); }
+    .hdr-sub { font-size: 11px; color: var(--muted); font-family: Tahoma, sans-serif; letter-spacing: .3px; }
+    .hdr-badge { margin-left: auto; background: var(--ci-red); border-radius: 20px; padding: 4px 12px; font-size: 10px; color: #fff; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; font-family: Tahoma, sans-serif; }
+
+    /* PROGRESS */
+    .prog { background: #fff; padding: 10px 18px; border-bottom: 1px solid var(--border); }
+    .prog-steps { display: flex; gap: 5px; align-items: center; margin-bottom: 5px; }
+    .dot { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; border: 2px solid var(--border); color: var(--muted); background: var(--bg); transition: all .3s; font-family: Tahoma, sans-serif; }
+    .dot.active { border-color: var(--ci-cobalt); color: var(--ci-cobalt); background: rgba(5,96,171,.08); }
+    .dot.done { border-color: var(--ci-green); color: #fff; background: var(--ci-green); }
+    .line { flex: 1; height: 2px; background: var(--border); transition: background .3s; }
+    .line.done { background: var(--ci-green); }
+    .prog-lbl { font-size: 11px; color: var(--muted); text-align: center; font-family: Tahoma, sans-serif; }
+
+    /* SCREENS */
+    .screen { display: none; padding: 16px; }
+    .screen.active { display: block; }
+    .stitle { font-size: 18px; font-weight: 700; margin-bottom: 2px; color: var(--ci-dark); font-family: Tahoma, sans-serif; }
+    .ssub { font-size: 12px; color: var(--muted); margin-bottom: 18px; font-family: Tahoma, sans-serif; }
+
+    /* FORM */
+    .fg { margin-bottom: 13px; }
+    label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); margin-bottom: 5px; font-family: Tahoma, sans-serif; }
+    label .req { color: var(--ci-red); }
+    input, select, textarea { width: 100%; background: #fff; border: 1.5px solid var(--border); border-radius: var(--r); color: var(--text); padding: 10px 12px; font-size: 14px; font-family: Tahoma, sans-serif; outline: none; transition: border-color .2s, box-shadow .2s; -webkit-appearance: none; }
+    input:focus, select:focus, textarea:focus { border-color: var(--ci-cobalt); box-shadow: 0 0 0 3px rgba(5,96,171,.1); }
+    input::placeholder, textarea::placeholder { color: #b0bec5; }
+    select option { background: #fff; color: var(--text); }
+    textarea { min-height: 88px; resize: vertical; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* BUTTONS */
+    .btn { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; padding: 14px; border-radius: var(--r); font-size: 14px; font-weight: 700; border: none; cursor: pointer; transition: all .2s; font-family: Tahoma, sans-serif; }
+    .btn-red { background: var(--ci-cobalt); color: #fff; }
+    .btn-red:active { background: #044580; transform: scale(.98); }
+    .btn-gray { background: #fff; color: var(--text); border: 1.5px solid var(--border); }
+    .btn-gray:active { background: var(--surface2); }
+    .btn-green { background: var(--ci-green); color: #fff; }
+    .btn-green:active { background: #077a39; }
+    .btn-outline { background: transparent; color: var(--ci-cobalt); border: 2px solid var(--ci-cobalt); }
+    .btn:disabled { opacity: .35; cursor: not-allowed; }
+    .btn-row { display: flex; gap: 10px; margin-top: 14px; }
+    .btn-row .btn { flex: 1; }
+
+    /* GROUP CARDS */
+    .gcard { background: #fff; border: 1.5px solid var(--border); border-radius: var(--r); padding: 13px 15px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; cursor: pointer; transition: all .2s; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+    .gcard:active { border-color: var(--ci-cobalt); background: rgba(5,96,171,.04); transform: scale(.99); }
+    .gcard.sel { border-color: var(--ci-cobalt); background: rgba(5,96,171,.04); }
+    .gicon { width: 42px; height: 42px; background: var(--ci-light); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .gname { font-weight: 700; font-size: 14px; font-family: Tahoma, sans-serif; }
+    .gcnt { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .back-btn { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; color: var(--ci-cobalt); background: rgba(5,96,171,.06); border: 1px solid rgba(5,96,171,.2); border-radius: 7px; padding: 7px 13px; cursor: pointer; margin-bottom: 13px; width: fit-content; font-family: Tahoma, sans-serif; }
+    .back-btn:active { background: rgba(5,96,171,.14); }
+    .grp-header { font-size: 12px; color: var(--muted); margin-bottom: 9px; display: flex; align-items: center; justify-content: space-between; font-family: Tahoma, sans-serif; }
+
+    /* VEHICLE LIST */
+    .vcard { background: #fff; border: 1.5px solid var(--border); border-radius: var(--r); padding: 12px; display: flex; gap: 11px; align-items: center; margin-bottom: 8px; cursor: pointer; transition: all .2s; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+    .vcard:active, .vcard.sel { border-color: var(--ci-cobalt); background: rgba(5,96,171,.04); box-shadow: 0 0 0 2px rgba(5,96,171,.15); }
+    .vicon { width: 40px; height: 40px; background: var(--ci-light); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .vname { font-weight: 700; font-size: 14px; font-family: Tahoma, sans-serif; }
+    .vplate { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .vkm { font-size: 11px; color: var(--ci-green); margin-top: 3px; font-weight: 700; }
+    .vcheck { margin-left: auto; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; transition: all .2s; }
+    .vcard.sel .vcheck { background: var(--ci-cobalt); border-color: var(--ci-cobalt); color: #fff; }
+
+    /* SEARCH */
+    .search-wrap { position: relative; margin-bottom: 12px; }
+    .search-wrap input { padding-left: 36px; }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 16px; pointer-events: none; }
+
+    /* DAMAGE */
+    .dmg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 13px; }
+    .dmg { background: #fff; border: 1.5px solid var(--border); border-radius: var(--r); padding: 10px 8px; text-align: center; cursor: pointer; transition: all .2s; font-size: 12px; font-weight: 600; font-family: Tahoma, sans-serif; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+    .dmg .di { font-size: 19px; display: block; margin-bottom: 3px; }
+    .dmg.sel { border-color: var(--ci-cobalt); background: rgba(5,96,171,.08); color: var(--ci-cobalt); }
+
+    /* PHOTOS */
+    .pgrid { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; margin-bottom: 11px; }
+    .pthumb { aspect-ratio: 1; border-radius: 8px; overflow: hidden; position: relative; background: var(--surface2); border: 1.5px solid var(--border); }
+    .pthumb img { width: 100%; height: 100%; object-fit: cover; }
+    .pdel { position: absolute; top: 3px; right: 3px; background: rgba(0,0,0,.65); color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .padd { aspect-ratio: 1; border-radius: 8px; border: 2px dashed var(--border); background: transparent; color: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; font-size: 26px; transition: all .2s; }
+    .padd:active { background: rgba(5,96,171,.07); border-color: var(--ci-cobalt); }
+    .padd-lbl { font-size: 10px; color: var(--muted); }
+    .pcnt { font-size: 11px; color: var(--muted); text-align: right; margin-top: -6px; margin-bottom: 8px; }
+    #camInput { display: none; }
+
+    /* DIVIDER */
+    .div { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--ci-cobalt); margin: 16px 0 10px; display: flex; align-items: center; gap: 8px; font-family: Tahoma, sans-serif; }
+    .div::after { content: ''; flex: 1; height: 1px; background: var(--ci-light); }
+
+    /* INFO BOXES */
+    .info { background: rgba(167,190,205,.15); border: 1px solid var(--ci-blue); border-radius: var(--r); padding: 10px 12px; font-size: 12px; color: var(--ci-mid); margin-bottom: 13px; font-family: Tahoma, sans-serif; }
+    .info.red { background: rgba(229,23,35,.06); border-color: rgba(229,23,35,.3); color: var(--ci-red); }
+    .info.green { background: rgba(9,154,72,.07); border-color: rgba(9,154,72,.3); color: var(--ci-green); }
+
+    /* BADGES */
+    .vbadge { display: inline-flex; align-items: center; gap: 5px; background: var(--ci-light); border: 1px solid var(--ci-blue); border-radius: 20px; padding: 5px 12px; font-size: 12px; font-weight: 700; color: var(--ci-cobalt); margin-bottom: 13px; font-family: Tahoma, sans-serif; }
+    .kmbadge { background: rgba(9,154,72,.08); border: 1px solid rgba(9,154,72,.3); border-radius: 7px; padding: 7px 12px; font-size: 13px; color: var(--ci-green); font-weight: 700; margin-bottom: 13px; font-family: Tahoma, sans-serif; }
+
+    /* SUMMARY */
+    .sblock { background: #fff; border: 1px solid var(--border); border-radius: var(--r); padding: 13px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+    .sblock h3 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--ci-cobalt); margin-bottom: 9px; font-family: Tahoma, sans-serif; border-left: 3px solid var(--ci-blue); padding-left: 7px; }
+    .srow { display: flex; justify-content: space-between; font-size: 12px; padding: 4px 0; border-bottom: 1px solid var(--surface2); font-family: Tahoma, sans-serif; }
+    .srow:last-child { border: none; }
+    .srow .k { color: var(--muted); }
+    .srow .v { font-weight: 600; text-align: right; max-width: 60%; }
+
+    /* LOADING */
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(29,29,27,.7); z-index: 999; align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
+    .overlay.show { display: flex; }
+    .spin { width: 44px; height: 44px; border: 4px solid rgba(167,190,205,.3); border-top-color: var(--ci-cobalt); border-radius: 50%; animation: sp .8s linear infinite; }
+    @keyframes sp { to { transform: rotate(360deg); } }
+    .spin-txt { color: #fff; font-size: 13px; font-family: Tahoma, sans-serif; }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--ci-dark); color: #fff; padding: 10px 18px; border-radius: 22px; font-size: 13px; font-weight: 600; box-shadow: 0 4px 18px rgba(0,0,0,.25); border: none; z-index: 998; transition: transform .3s; max-width: 82vw; text-align: center; font-family: Tahoma, sans-serif; }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.err { background: var(--ci-red); }
+    .toast.ok { background: var(--ci-green); }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <img class="hdr-logo" src="data:image/png;base64,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" alt="WeGo VTI">
+  <div class="hdr-divider"></div>
+  <div class="hdr-sub">Unfallaufnahme</div>
+  <div class="hdr-badge">⚠ Notfall</div>
+</header>
+
+<!-- PROGRESS -->
+<div class="prog">
+  <div class="prog-steps">
+    <div class="dot active" id="dot1">1</div><div class="line" id="ln1"></div>
+    <div class="dot" id="dot2">2</div><div class="line" id="ln2"></div>
+    <div class="dot" id="dot3">3</div><div class="line" id="ln3"></div>
+    <div class="dot" id="dot4">4</div><div class="line" id="ln4"></div>
+    <div class="dot" id="dot5">5</div>
+  </div>
+  <div class="prog-lbl" id="pLbl">Fahrzeugauswahl</div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 1 – FAHRZEUGAUSWAHL
+═══════════════════════════════════════ -->
+<div class="screen active" id="s1">
+  <div class="stitle">Fahrzeugauswahl</div>
+  <div class="ssub" id="s1Sub">Gruppe wählen oder Kennzeichen suchen</div>
+
+  <!-- Auto-Start: wird sofort beim Öffnen der App ausgelöst -->
+  <div id="loadBtns">
+    <div class="fg">
+      <button class="btn btn-red" onclick="loadGroups()" id="loadBtn">🔄 Fahrzeuge neu laden</button>
+    </div>
+  </div>
+
+  <!-- Suche (immer sichtbar nach dem Laden) -->
+  <div class="search-wrap" id="searchWrap" style="display:none">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Kennzeichen oder Name suchen..." oninput="onSearch(this.value)">
+  </div>
+
+  <!-- Gruppenansicht -->
+  <div id="groupView" style="display:none">
+    <div class="grp-header">
+      <span id="grpCount"></span>
+      <span style="font-size:11px;color:var(--muted)">Tippen zum Öffnen</span>
+    </div>
+    <div id="gList"></div>
+  </div>
+
+  <!-- Fahrzeugliste (nach Gruppenauswahl oder Suche) -->
+  <div id="vehicleView" style="display:none">
+    <div class="back-btn" onclick="backToGroups()" id="backBtn">← Gruppen</div>
+    <div class="grp-header" id="vListHeader"></div>
+    <div id="vList"></div>
+  </div>
+
+  <div class="btn-row" style="margin-top:18px">
+    <button class="btn btn-red" id="btn1" disabled onclick="goTo(2)">Weiter →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 2 – FAHRER + UNFALL
+═══════════════════════════════════════ -->
+<div class="screen" id="s2">
+  <div class="stitle">Fahrer & Unfallangaben</div>
+  <div class="ssub">Ihre Daten und Unfalldetails erfassen</div>
+
+  <div class="vbadge" id="vBadge">🚛 Fahrzeug</div>
+  <div class="kmbadge" id="kmBadge">📏 Kilometerstand wird geladen...</div>
+
+  <div class="div">Fahrerangaben</div>
+  <div class="fg"><label>Fahrername <span class="req">*</span> <span id="driverSrc" style="color:var(--green);font-weight:400;text-transform:none;letter-spacing:0;font-size:10px"></span></label><input type="text" id="dName" placeholder="Vor- und Nachname" oninput="document.getElementById('driverSrc').textContent=''"></div>
+  <div class="fg"><label>Führerschein-Nr.</label><input type="text" id="dLic" placeholder="Manuell eintragen"></div>
+  <div class="fg"><label>Telefon</label><input type="tel" id="dPhone" placeholder="Ihre Handynummer"></div>
+
+  <div class="div">Unfallangaben</div>
+  <div class="row2">
+    <div class="fg"><label>Datum <span class="req">*</span></label><input type="date" id="aDate"></div>
+    <div class="fg"><label>Uhrzeit <span class="req">*</span></label><input type="time" id="aTime"></div>
+  </div>
+  <div class="fg">
+    <label>Unfallort <span class="req">*</span> <span id="locSrc" style="color:var(--green);font-weight:400;text-transform:none;letter-spacing:0;font-size:10px"></span></label>
+    <input type="text" id="aLoc" placeholder="Straße, Ort / Autobahn, km" oninput="document.getElementById('locSrc').textContent=''">
+  </div>
+  <div class="fg"><label>Unfallhergang <span class="req">*</span></label><textarea id="aDesc" placeholder="Beschreiben Sie den Unfallhergang kurz und präzise..."></textarea></div>
+  <div class="fg">
+    <label>Schadensart</label>
+    <div class="dmg-grid">
+      <div class="dmg" onclick="pickDmg(this,'Auffahrunfall')"><span class="di">💥</span>Auffahrunfall</div>
+      <div class="dmg" onclick="pickDmg(this,'Seitencrash')"><span class="di">↔</span>Seitencrash</div>
+      <div class="dmg" onclick="pickDmg(this,'Parkschaden')"><span class="di">🅿</span>Parkschaden</div>
+      <div class="dmg" onclick="pickDmg(this,'Wildunfall')"><span class="di">🦌</span>Wildunfall</div>
+      <div class="dmg" onclick="pickDmg(this,'Fahrbahnschaden')"><span class="di">🛣</span>Fahrbahnschaden</div>
+      <div class="dmg" onclick="pickDmg(this,'Sonstiges')"><span class="di">📋</span>Sonstiges</div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-gray" onclick="goTo(1)">← Zurück</button>
+    <button class="btn btn-red" onclick="next2()">Weiter →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 3 – UNFALLGEGNER
+═══════════════════════════════════════ -->
+<div class="screen" id="s3">
+  <div class="stitle">Unfallgegner</div>
+  <div class="ssub">Daten des Unfallgegners erfassen</div>
+
+  <div class="info">ℹ️ Bei Personenschaden: Sofort Notruf <strong>112</strong> rufen!</div>
+
+  <div class="div">Fahrzeug des Gegners</div>
+  <div class="row2">
+    <div class="fg"><label>Kennzeichen <span class="req">*</span></label><input type="text" id="oPlate" placeholder="z.B. DO-AB 1234" style="text-transform:uppercase"></div>
+    <div class="fg"><label>Fahrzeugtyp</label><input type="text" id="oType" placeholder="z.B. VW Golf"></div>
+  </div>
+  <div class="row2">
+    <div class="fg"><label>Farbe</label><input type="text" id="oColor" placeholder="Farbe"></div>
+    <div class="fg"><label>Baujahr</label><input type="text" id="oYear" placeholder="z.B. 2019"></div>
+  </div>
+
+  <div class="div">Fahrer des Gegners</div>
+  <div class="fg"><label>Name</label><input type="text" id="oName" placeholder="Vor- und Nachname"></div>
+  <div class="row2">
+    <div class="fg"><label>Geburtsdatum</label><input type="date" id="oBirth"></div>
+    <div class="fg"><label>Telefon</label><input type="tel" id="oPhone" placeholder="Nummer"></div>
+  </div>
+  <div class="fg"><label>Adresse</label><input type="text" id="oAddr" placeholder="Straße, PLZ, Ort"></div>
+  <div class="fg"><label>Führerschein-Nr.</label><input type="text" id="oLic" placeholder="Führerscheinnummer"></div>
+
+  <div class="div">Versicherung des Gegners</div>
+  <div class="fg"><label>Versicherungsgesellschaft</label><input type="text" id="oIns" placeholder="z.B. HUK-Coburg"></div>
+  <div class="fg"><label>Policennummer</label><input type="text" id="oPol" placeholder="Versicherungsscheinnummer"></div>
+
+  <div class="div">Zeugen & Polizei</div>
+  <div class="fg"><label>Zeuge 1</label><input type="text" id="w1" placeholder="Name + Telefon (falls vorhanden)"></div>
+  <div class="fg"><label>Zeuge 2</label><input type="text" id="w2" placeholder="Name + Telefon (falls vorhanden)"></div>
+  <div class="fg">
+    <label>Polizei aufgenommen?</label>
+    <select id="pol" onchange="document.getElementById('polNrWrap').style.display=this.value.startsWith('Ja')?'block':'none'">
+      <option value="">– Bitte wählen –</option>
+      <option value="Ja – Polizei war vor Ort">Ja – Polizei war vor Ort</option>
+      <option value="Nein">Nein</option>
+      <option value="Polizei nicht gerufen">Polizei nicht gerufen</option>
+    </select>
+  </div>
+  <div id="polNrWrap" style="display:none" class="fg">
+    <label>Aktenzeichen / Dienststelle</label>
+    <input type="text" id="polNr" placeholder="Aktenzeichen oder Dienststelle">
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-gray" onclick="goTo(2)">← Zurück</button>
+    <button class="btn btn-red" onclick="next3()">Weiter →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 4 – FOTOS
+═══════════════════════════════════════ -->
+<div class="screen" id="s4">
+  <div class="stitle">Fotos</div>
+  <div class="ssub">Bis zu 10 Fotos vom Schaden aufnehmen</div>
+
+  <div class="info">📸 Fotografieren: Gesamtansicht, Schäden, beide Kennzeichen, Unfallstelle, Spurrillen</div>
+
+  <div class="pgrid" id="pgrid"></div>
+  <div class="pcnt" id="pcnt">0 / 10 Fotos</div>
+  <button class="btn btn-outline" id="addBtn" onclick="document.getElementById('camInput').click()">📷 Foto aufnehmen / Galerie</button>
+  <input type="file" id="camInput" accept="image/*" capture="environment" multiple onchange="addPhotos(this)">
+
+  <div class="btn-row" style="margin-top:18px">
+    <button class="btn btn-gray" onclick="goTo(3)">← Zurück</button>
+    <button class="btn btn-red" onclick="goTo(5);buildSummary()">Weiter →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 5 – ZUSAMMENFASSUNG
+═══════════════════════════════════════ -->
+<div class="screen" id="s5">
+  <div class="stitle">Zusammenfassung</div>
+  <div class="ssub">Bericht prüfen und senden</div>
+
+  <div id="sumContent"></div>
+
+  <div class="info green" style="margin-top:10px">
+    📧 PDF wird automatisch per E-Mail versendet
+  </div>
+
+  <div class="btn-row" style="margin-top:18px">
+    <button class="btn btn-gray" onclick="goTo(4)">← Zurück</button>
+    <button class="btn btn-green" onclick="createPDF()">✉ PDF erstellen & senden</button>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="overlay" id="overlay"><div class="spin"></div><div class="spin-txt" id="spinTxt">Bitte warten...</div></div>
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// Empfänger-Adresse (für Tests: Gmail, produktiv: logistik@wego-vti.de)
+const MAIL_TO = 'logistik@wego-vti.de';
+
+// ═══════════════════════════════
+// WEBFLEET CONFIG
+// ═══════════════════════════════
+const WF = {
+  account:  'wego',
+  username: 'Unfall',
+  password: 'Sigg2026+',
+  apikey:   '14905b0a-00ae-4adc-90e1-c6a9aa83780a',
+  base:     'https://csv.webfleet.com/extern'
+};
+
+function wfAuth() {
+  return 'Basic ' + btoa(WF.username + ':' + WF.password);
+}
+
+function wfUrl(action, extra) {
+  const p = new URLSearchParams({ account: WF.account, apikey: WF.apikey, action, outputformat: 'json', useISO8601: 'true', useUTF8: 'true', lang: 'de', ...extra });
+  return WF.base + '?' + p.toString();
+}
+
+async function wfFetch(action, extra) {
+  const res = await fetch(wfUrl(action, extra || {}), { headers: { 'Authorization': wfAuth() } });
+  const data = await res.json();
+  if (data.errorCode) throw new Error('Webfleet Fehler ' + data.errorCode + ': ' + data.errorMsg);
+  return Array.isArray(data) ? data : (data.records || data);
+}
+
+// ═══════════════════════════════
+// STATE
+// ═══════════════════════════════
+const S = { screen: 1, vehicle: null, km: null, photos: [], damage: '', allVehicles: [], groups: [] };
+
+// Init date/time
+const now = new Date();
+document.getElementById('aDate').value = now.toISOString().split('T')[0];
+document.getElementById('aTime').value = now.toTimeString().slice(0,5);
+renderPhotos();
+
+// Auto-Start: Webfleet-Fahrzeuge direkt beim Öffnen laden
+window.addEventListener('load', () => setTimeout(loadGroups, 400));
+
+// ═══════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════
+const lbls = ['Fahrzeugauswahl','Unfallangaben','Unfallgegner','Fotos','Zusammenfassung'];
+
+function goTo(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('s' + n).classList.add('active');
+  S.screen = n;
+  // progress
+  for (let i = 1; i <= 5; i++) {
+    const d = document.getElementById('dot' + i);
+    d.className = 'dot' + (i < n ? ' done' : i === n ? ' active' : '');
+    d.textContent = i < n ? '✓' : i;
+    if (i < 5) document.getElementById('ln' + i).className = 'line' + (i < n ? ' done' : '');
+  }
+  document.getElementById('pLbl').textContent = lbls[n - 1];
+  window.scrollTo(0, 0);
+}
+
+function next2() {
+  if (!g('dName') || !g('aDate') || !g('aTime') || !g('aLoc') || !g('aDesc')) {
+    toast('Bitte alle Pflichtfelder (*) ausfüllen', 'err'); return;
+  }
+  goTo(3);
+}
+
+function next3() {
+  if (!g('oPlate')) { toast('Bitte Kennzeichen des Unfallgegners eintragen', 'err'); return; }
+  goTo(4);
+}
+
+function g(id) { return (document.getElementById(id)?.value || '').trim(); }
+
+// ═══════════════════════════════
+// WEBFLEET – GRUPPEN & FAHRZEUGE
+// ═══════════════════════════════
+function mapVehicle(v) {
+  return {
+    id:         v.objectuid     || v.objectno,
+    name:       v.objectname    || v.objectno,
+    plate:      v.vehicleid     || v.objectno,
+    km:         v.odometer_long ? Math.round(v.odometer_long / 1000)
+              : v.mileage       ? Math.round(v.mileage / 1000) : null,
+    pos:        v.postext_short || v.postext || '',
+    driverno:   v.driverno      || '',
+    driveruid:  v.driveruid     || '',
+    drivername: v.drivername    || ''
+  };
+}
+
+async function loadGroups() {
+  showLoad('Gruppen werden geladen...');
+  try {
+    // Load groups and all vehicles in parallel
+    const [groupData, vehicleData] = await Promise.all([
+      wfFetch('showObjectGroups'),
+      wfFetch('showObjectReportExtern')
+    ]);
+    hideLoad();
+
+    // Store all vehicles
+    S.allVehicles = vehicleData.map(mapVehicle).filter(v => v.name);
+
+    // Store groups, sorted by name
+    S.groups = groupData
+      .map(g => ({
+        name:  g.objectgroupname,
+        uid:   g.objectgroupuid,
+        count: parseInt(g.objectcount) || 0
+      }))
+      .filter(g => g.name && /^\d{3}/.test(g.name))
+      .sort((a,b) => a.name.localeCompare(b.name, 'de'));
+
+    document.getElementById('loadBtns').style.display = 'none';
+    document.getElementById('searchWrap').style.display = 'block';
+    showGroupView();
+    toast(S.groups.length + ' Gruppen · ' + S.allVehicles.length + ' Fahrzeuge', 'ok');
+  } catch(e) {
+    hideLoad();
+    toast('Fehler: ' + e.message, 'err');
+    console.error(e);
+  }
+}
+
+function showGroupView() {
+  document.getElementById('groupView').style.display = 'block';
+  document.getElementById('vehicleView').style.display = 'none';
+  document.getElementById('s1Sub').textContent = 'Gruppe wählen oder Kennzeichen suchen';
+  document.getElementById('grpCount').textContent = S.groups.length + ' Gruppen';
+  document.getElementById('searchInput').value = '';
+
+  const el = document.getElementById('gList');
+  el.innerHTML = '';
+
+  // "Alle Fahrzeuge" card
+  const all = document.createElement('div');
+  all.className = 'gcard';
+  all.innerHTML = `
+    <div class="gicon">🚛</div>
+    <div style="flex:1"><div class="gname">Alle Fahrzeuge</div>
+    <div class="gcnt">${S.allVehicles.length} Fahrzeuge gesamt</div></div>
+    <div style="color:var(--muted);font-size:18px">›</div>`;
+  all.onclick = () => showVehiclesForGroup(null);
+  el.appendChild(all);
+
+  // One card per group
+  S.groups.forEach(grp => {
+    const card = document.createElement('div');
+    card.className = 'gcard';
+    card.innerHTML = `
+      <div class="gicon">📁</div>
+      <div style="flex:1"><div class="gname">${grp.name}</div>
+      <div class="gcnt">${grp.count} Fahrzeug${grp.count !== 1 ? 'e' : ''}</div></div>
+      <div style="color:var(--muted);font-size:18px">›</div>`;
+    card.onclick = () => showVehiclesForGroup(grp);
+    el.appendChild(card);
+  });
+}
+
+function showVehiclesForGroup(grp) {
+  const vehicles = grp
+    ? S.allVehicles.filter(v => {
+        // Match by group name — vehicles don't carry groupname directly,
+        // so we re-fetch lazily if needed, but for now filter by name match
+        return true; // will be populated below
+      })
+    : S.allVehicles;
+
+  // Actually filter using showObjectGroupObjects data if available,
+  // otherwise show all and let user use search
+  const filtered = grp ? S.allVehicles : S.allVehicles;
+
+  // For group filtering: load vehicles for that group from API
+  if (grp) {
+    loadVehiclesForGroup(grp);
+    return;
+  }
+
+  document.getElementById('groupView').style.display = 'none';
+  document.getElementById('vehicleView').style.display = 'block';
+  document.getElementById('vListHeader').textContent = S.allVehicles.length + ' Fahrzeuge';
+  document.getElementById('s1Sub').textContent = 'Alle Fahrzeuge';
+  document.getElementById('backBtn').style.display = 'flex';
+  renderVehicles(S.allVehicles);
+}
+
+async function loadVehiclesForGroup(grp) {
+  showLoad('Fahrzeuge für "' + grp.name + '" laden...');
+  try {
+    const data = await wfFetch('showObjectReportExtern', { objectgroupname: grp.name });
+    hideLoad();
+    const vehicles = data.map(mapVehicle).filter(v => v.name);
+
+    document.getElementById('groupView').style.display = 'none';
+    document.getElementById('vehicleView').style.display = 'block';
+    document.getElementById('vListHeader').textContent = vehicles.length + ' Fahrzeuge in "' + grp.name + '"';
+    document.getElementById('s1Sub').textContent = grp.name;
+    document.getElementById('backBtn').style.display = 'flex';
+    renderVehicles(vehicles);
+  } catch(e) {
+    hideLoad();
+    toast('Fehler: ' + e.message, 'err');
+  }
+}
+
+function backToGroups() {
+  document.getElementById('searchInput').value = '';
+  showGroupView();
+}
+
+function onSearch(q) {
+  if (!S.allVehicles.length) return;
+  const f = q.trim().toLowerCase();
+  if (!f) {
+    // Empty search → back to group view
+    showGroupView();
+    return;
+  }
+  // Search across ALL vehicles
+  const filtered = S.allVehicles.filter(v =>
+    v.name.toLowerCase().includes(f) ||
+    v.plate.toLowerCase().includes(f)
+  );
+  document.getElementById('groupView').style.display = 'none';
+  document.getElementById('vehicleView').style.display = 'block';
+  document.getElementById('backBtn').style.display = 'none';
+  document.getElementById('vListHeader').textContent =
+    filtered.length + ' Ergebnis' + (filtered.length !== 1 ? 'se' : '') + ' für "' + q.trim() + '"';
+  renderVehicles(filtered);
+}
+
+async function loadVehicleKm(vehicle) {
+  // Try showObjectReportExtern for fresh odometer_long value
+  try {
+    const params = vehicle.id
+      ? { objectuid: vehicle.id }
+      : { objectno: vehicle.name };
+    const data = await wfFetch('showObjectReportExtern', params);
+    const v = Array.isArray(data) ? data[0] : data;
+    if (v) {
+      if (v.odometer_long) return Math.round(v.odometer_long / 1000);
+      if (v.mileage)       return Math.round(v.mileage / 1000);
+    }
+  } catch(e) { console.warn('KM fetch error:', e.message); }
+  // Fallback: value already loaded from list
+  return vehicle.km;
+}
+
+function loadDemo() {
+  S.allVehicles = [
+    { id:'T001', name:'MAN TGX 18.500',       plate:'DO-VT 1001', km:312450, pos:'Dortmund' },
+    { id:'T002', name:'Mercedes Actros 1853',  plate:'DO-VT 1002', km:287340, pos:'Hannover' },
+    { id:'T003', name:'Volvo FH 460',          plate:'DO-VT 1003', km:198200, pos:'Frankfurt' },
+    { id:'T004', name:'DAF XF 480',            plate:'DO-VT 1004', km:422100, pos:'Hamburg' },
+    { id:'T005', name:'Scania R 450',          plate:'DO-VT 1005', km:356800, pos:'München' },
+    { id:'T006', name:'MAN TGS 26.480',        plate:'DO-VT 1006', km:189000, pos:'Berlin' },
+    { id:'T007', name:'Mercedes Arocs 3348',   plate:'DO-VT 1007', km:97000,  pos:'Köln' },
+  ];
+  S.groups = [
+    { name:'Fernverkehr', uid:'G1', count:3 },
+    { name:'Nahverkehr',  uid:'G2', count:2 },
+    { name:'Baustelle',   uid:'G3', count:2 },
+  ];
+  document.getElementById('loadBtns').style.display = 'none';
+  document.getElementById('searchWrap').style.display = 'block';
+  showGroupView();
+  toast('Demo geladen', 'ok');
+}
+
+function renderVehicles(list) {
+  const el = document.getElementById('vList');
+  if (!list.length) {
+    el.innerHTML = '<div class="info red">Keine Fahrzeuge gefunden</div>'; return;
+  }
+  el.innerHTML = '';
+  list.forEach(v => {
+    const card = document.createElement('div');
+    card.className = 'vcard' + (S.vehicle?.id === v.id ? ' sel' : '');
+    card.innerHTML = `
+      <div class="vicon">🚛</div>
+      <div style="flex:1;min-width:0">
+        <div class="vname">${v.name}</div>
+        <div class="vplate">🔑 ${v.plate}</div>
+        ${v.km ? `<div class="vkm">📏 ${v.km.toLocaleString('de-DE')} km</div>` : ''}
+        ${v.drivername ? `<div style="font-size:11px;color:var(--yellow);margin-top:2px">👤 ${v.drivername}</div>` : ''}
+      </div>
+      <div class="vcheck">${S.vehicle?.id === v.id ? '✓' : ''}</div>`;
+    card.onclick = () => selectVehicle(card, v);
+    el.appendChild(card);
+  });
+}
+
+async function selectVehicle(card, v) {
+  document.querySelectorAll('.vcard').forEach(c => { c.classList.remove('sel'); c.querySelector('.vcheck').textContent = ''; });
+  card.classList.add('sel');
+  card.querySelector('.vcheck').textContent = '✓';
+  S.vehicle = v;
+  document.getElementById('btn1').disabled = false;
+
+  // Update screen 2 badges immediately with already-known values
+  document.getElementById('vBadge').textContent = '🚛 ' + v.name + ' | ' + v.plate;
+  // Show km from vehicle list immediately (odometer_long already fetched)
+  if (v.km) {
+    document.getElementById('kmBadge').textContent = '📏 Kilometerstand: ' + v.km.toLocaleString('de-DE') + ' km';
+    S.km = v.km;
+  } else {
+    document.getElementById('kmBadge').textContent = '📏 Kilometerstand wird geladen...';
+  }
+
+  // Prefill location from Webfleet immediately (overwritable)
+  if (v.pos) {
+    const locField = document.getElementById('aLoc');
+    locField.value = v.pos;
+    locField.style.borderColor = 'var(--green)';
+    setTimeout(() => locField.style.borderColor = '', 2000);
+    document.getElementById('locSrc').textContent = '· aus Webfleet (überschreibbar)';
+  }
+
+  // Load KM + driver info in parallel
+  showLoad('Fahrzeugdaten werden abgerufen...');
+  const [km, driver] = await Promise.all([
+    loadVehicleKm(v),
+    loadDriverInfo(v.driverno, v.driveruid)
+  ]);
+  hideLoad();
+
+  // Update KM
+  S.km = km;
+  if (km) {
+    document.getElementById('kmBadge').textContent = '📏 Kilometerstand: ' + km.toLocaleString('de-DE') + ' km';
+    const kmEl = card.querySelector('.vkm');
+    if (kmEl) kmEl.textContent = '📏 ' + km.toLocaleString('de-DE') + ' km';
+    else card.querySelector('div[style]').insertAdjacentHTML('beforeend',
+      '<div class="vkm">📏 ' + km.toLocaleString('de-DE') + ' km</div>');
+  }
+
+  // Prefill driver fields (only if currently empty)
+  if (driver) {
+    S.driver = driver;
+    const setIfEmpty = (id, val) => {
+      const el = document.getElementById(id);
+      if (el && !el.value.trim() && val) {
+        el.value = val;
+        el.style.borderColor = 'var(--green)';
+        setTimeout(() => el.style.borderColor = '', 2000);
+      }
+    };
+    setIfEmpty('dName',  driver.name);
+    if (driver.name) document.getElementById('driverSrc').textContent = '· aus Webfleet (überschreibbar)';
+    setIfEmpty('dPhone', driver.phone);
+    // Führerschein-Nr. wird manuell eingetragen – Webfleet hat nur Tachograph-Kartennr.
+    // Show driver badge on card
+    const dEl = card.querySelector('.vkm');
+    const parent = card.querySelector('div[style]');
+    if (driver.name && parent) {
+      const existing = parent.querySelector('.vdriver');
+      if (!existing) {
+        const d = document.createElement('div');
+        d.className = 'vdriver';
+        d.style.cssText = 'font-size:11px;color:var(--yellow);margin-top:2px';
+        d.textContent = '👤 ' + driver.name;
+        parent.appendChild(d);
+      }
+    }
+    toast(v.name + ' ausgewählt' + (driver.name ? ' · Fahrer: ' + driver.name : ''), 'ok');
+  } else {
+    toast(v.name + ' ausgewählt', 'ok');
+  }
+}
+
+async function loadDriverInfo(driverno, driveruid) {
+  // If neither driverno nor driveruid known, no driver signed on
+  if (!driverno && !driveruid) {
+    console.log('No driver signed on to this vehicle');
+    return null;
+  }
+  try {
+    // Try by driverno first, then driveruid
+    const params = driverno ? { driverno } : { driveruid };
+    const data = await wfFetch('showDriverReportExtern', params);
+    const list = Array.isArray(data) ? data : [data];
+    const d = list[0];
+    if (!d || (!d.name1 && !d.driverno)) {
+      console.log('Driver lookup returned empty result');
+      return null;
+    }
+    const name = [d.name1, d.name2, d.name3].filter(Boolean).join(' ').trim();
+    console.log('Driver found:', name, '| card:', d.dt_cardid);
+    return {
+      name:     name,
+      phone:    d.telmobile || d.telprivate || '',
+      cardid:   d.dt_cardid || '',
+      driverno: d.driverno  || ''
+    };
+  } catch(e) {
+    console.warn('Driver fetch error:', e.message);
+    return null;
+  }
+}
+
+// ═══════════════════════════════
+// DAMAGE
+// ═══════════════════════════════
+function pickDmg(el, type) {
+  document.querySelectorAll('.dmg').forEach(d => d.classList.remove('sel'));
+  el.classList.add('sel');
+  S.damage = type;
+}
+
+// ═══════════════════════════════
+// PHOTOS
+// ═══════════════════════════════
+function addPhotos(input) {
+  const rem = 10 - S.photos.length;
+  const files = Array.from(input.files).slice(0, rem);
+  if (input.files.length > rem) toast('Nur ' + rem + ' weitere Fotos möglich', 'err');
+  input.value = '';
+
+  // Jedes Foto über Canvas normalisieren → sauberes JPEG für jsPDF
+  files.forEach(f => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        // Max. 1200px Breite für PDF-Performance
+        const maxW = 1200;
+        const scale = img.width > maxW ? maxW / img.width : 1;
+        const canvas = document.createElement('canvas');
+        canvas.width  = Math.round(img.width  * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const jpeg = canvas.toDataURL('image/jpeg', 0.82);
+        S.photos.push({ url: jpeg, name: f.name, w: canvas.width, h: canvas.height });
+        renderPhotos();
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+function renderPhotos() {
+  const g = document.getElementById('pgrid');
+  g.innerHTML = '';
+  S.photos.forEach((p, i) => {
+    const d = document.createElement('div');
+    d.className = 'pthumb';
+    d.innerHTML = `<img src="${p.url}"><button class="pdel" onclick="S.photos.splice(${i},1);renderPhotos()">✕</button>`;
+    g.appendChild(d);
+  });
+  if (S.photos.length < 10) {
+    const a = document.createElement('div');
+    a.className = 'padd';
+    a.innerHTML = '<span>+</span><span class="padd-lbl">Foto</span>';
+    a.onclick = () => document.getElementById('camInput').click();
+    g.appendChild(a);
+  }
+  document.getElementById('pcnt').textContent = S.photos.length + ' / 10 Fotos';
+}
+
+// ═══════════════════════════════
+// SUMMARY
+// ═══════════════════════════════
+function buildSummary() {
+  document.getElementById('sumContent').innerHTML = `
+    <div class="sblock"><h3>🚛 Fahrzeug</h3>
+      <div class="srow"><span class="k">Fahrzeug</span><span class="v">${S.vehicle?.name||'–'}</span></div>
+      <div class="srow"><span class="k">Kennzeichen</span><span class="v">${S.vehicle?.plate||'–'}</span></div>
+      <div class="srow"><span class="k">Kilometerstand</span><span class="v">${S.km?S.km.toLocaleString('de-DE')+' km':'–'}</span></div>
+    </div>
+    <div class="sblock"><h3>👤 Fahrer</h3>
+      <div class="srow"><span class="k">Name</span><span class="v">${g('dName')}</span></div>
+      <div class="srow"><span class="k">Telefon</span><span class="v">${g('dPhone')||'–'}</span></div>
+    </div>
+    <div class="sblock"><h3>📍 Unfall</h3>
+      <div class="srow"><span class="k">Datum / Zeit</span><span class="v">${g('aDate')} ${g('aTime')} Uhr</span></div>
+      <div class="srow"><span class="k">Ort</span><span class="v">${g('aLoc')}</span></div>
+      <div class="srow"><span class="k">Schadensart</span><span class="v">${S.damage||'–'}</span></div>
+    </div>
+    <div class="sblock"><h3>🚗 Unfallgegner</h3>
+      <div class="srow"><span class="k">Kennzeichen</span><span class="v">${g('oPlate').toUpperCase()}</span></div>
+      <div class="srow"><span class="k">Fahrzeug</span><span class="v">${g('oType')||'–'}</span></div>
+      <div class="srow"><span class="k">Fahrer</span><span class="v">${g('oName')||'–'}</span></div>
+      <div class="srow"><span class="k">Versicherung</span><span class="v">${g('oIns')||'–'}</span></div>
+    </div>
+    <div class="sblock"><h3>📷 Fotos</h3>
+      <div class="srow"><span class="k">Aufgenommen</span><span class="v">${S.photos.length} Foto(s)</span></div>
+    </div>`;
+}
+
+// ═══════════════════════════════
+// PDF + EMAIL
+// ═══════════════════════════════
+async function createPDF() {
+  showLoad('PDF wird erstellt...');
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const W = 210, M = 15;
+    let y = 0;
+
+    const chk = (n=20) => { if (y + n > 280) { doc.addPage(); y = 15; } };
+    const sec = (t) => {
+      chk(14); doc.setFillColor(240,240,240); doc.rect(M, y, W-2*M, 7, 'F');
+      doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(5,96,171);
+      doc.text(t, M+3, y+5); doc.setTextColor(30,30,30); y += 11;
+    };
+    const row = (k, v) => {
+      chk(7); doc.setFontSize(9); doc.setFont('helvetica','bold');
+      doc.text(k + ':', M+2, y); doc.setFont('helvetica','normal');
+      doc.text(String(v||'–'), M+55, y); y += 6.5;
+    };
+    const longRow = (k, v) => {
+      chk(12); doc.setFontSize(9); doc.setFont('helvetica','bold');
+      doc.text(k + ':', M+2, y); y += 4.5;
+      doc.setFont('helvetica','normal');
+      const lines = doc.splitTextToSize(String(v||'–'), W-2*M-4);
+      doc.text(lines, M+4, y); y += lines.length * 4.8 + 2;
+    };
+
+    // Header
+    doc.setFillColor(5,96,171); doc.rect(0,0,210,36,'F'); doc.setFillColor(167,190,205); doc.rect(0,33,210,3,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(20); doc.setFont('helvetica','bold');
+    doc.text('WeGo VTI', M, 14);
+    doc.setFontSize(11); doc.setFont('helvetica','normal');
+    doc.text('Unfallbericht', M, 22);
+    doc.setFontSize(8);
+    doc.text('Erstellt: ' + new Date().toLocaleString('de-DE'), M, 30);
+    doc.text('logistik@wego-vti.de', W-M, 30, {align:'right'});
+    y = 44; doc.setTextColor(30,30,30);
+
+    sec('FAHRZEUG');
+    row('Fahrzeug', S.vehicle?.name); row('Kennzeichen', S.vehicle?.plate);
+    row('Kilometerstand', S.km ? S.km.toLocaleString('de-DE') + ' km' : '–');
+    y += 3;
+
+    sec('FAHRER');
+    row('Name', g('dName'));
+    row('Führerschein-Nr.', g('dLic')); row('Telefon', g('dPhone'));
+    y += 3;
+
+    sec('UNFALLANGABEN');
+    row('Datum', g('aDate')); row('Uhrzeit', g('aTime') + ' Uhr');
+    row('Unfallort', g('aLoc')); row('Schadensart', S.damage || '–');
+    longRow('Unfallhergang', g('aDesc'));
+    y += 3;
+
+    sec('UNFALLGEGNER – FAHRZEUG');
+    row('Kennzeichen', g('oPlate').toUpperCase()); row('Fahrzeugtyp', g('oType'));
+    row('Farbe', g('oColor')); row('Baujahr', g('oYear'));
+    y += 2;
+    sec('UNFALLGEGNER – FAHRER');
+    row('Name', g('oName')); row('Geburtsdatum', g('oBirth'));
+    row('Telefon', g('oPhone')); row('Adresse', g('oAddr'));
+    row('Führerschein-Nr.', g('oLic'));
+    y += 2;
+    sec('VERSICHERUNG DES GEGNERS');
+    row('Versicherung', g('oIns')); row('Policennummer', g('oPol'));
+    y += 3;
+
+    sec('ZEUGEN & POLIZEI');
+    row('Zeuge 1', g('w1') || '–'); row('Zeuge 2', g('w2') || '–');
+    row('Polizei', g('pol') || '–');
+    if (g('polNr')) row('Aktenzeichen', g('polNr'));
+    y += 6;
+
+    // Photos
+    if (S.photos.length > 0) {
+      sec('FOTOS (' + S.photos.length + ')');
+      const iW = 82, iH = 62, gap = 8;
+      for (let i = 0; i < S.photos.length; i++) {
+        const col = i % 2;
+        if (col === 0) chk(iH + 10);
+        const x = M + col * (iW + gap);
+        try {
+          // DataURL beginnt mit "data:image/jpeg;base64," – Typ explizit ableiten
+          const dataUrl = S.photos[i].url;
+          const mime = dataUrl.split(';')[0].split(':')[1] || 'image/jpeg';
+          const fmt = mime.includes('png') ? 'PNG' : 'JPEG';
+          doc.addImage(dataUrl, fmt, x, y, iW, iH);
+        } catch(e) { console.warn('Foto ' + (i+1) + ' konnte nicht eingebettet werden:', e.message); }
+        doc.setFontSize(7); doc.text('Foto ' + (i+1), x+2, y + iH - 2);
+        if (col === 1 || i === S.photos.length - 1) y += iH + 4;
+      }
+    }
+
+    // Signature
+    chk(28); y += 8;
+    doc.setDrawColor(5,96,171);
+    doc.line(M, y, M+65, y); doc.line(W-M-65, y, W-M, y);
+    doc.setFontSize(8); doc.setTextColor(120);
+    doc.text('Unterschrift Fahrer', M, y+4);
+    doc.text('Datum / Ort', W-M-65, y+4);
+
+    // Footer on every page
+    const pages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pages; i++) {
+      doc.setPage(i); doc.setFontSize(7); doc.setTextColor(150);
+      doc.text('WeGo VTI · Unfallbericht · vertraulich · Seite ' + i + ' von ' + pages, W/2, 293, {align:'center'});
+    }
+
+    // Dateiname
+    const dateStr = g('aDate').replace(/-/g,'') || new Date().toISOString().slice(0,10).replace(/-/g,'');
+    const plateSafe = (S.vehicle?.plate || 'FAHRZEUG').replace(/[^A-Z0-9]/gi,'-');
+    const filename = 'Unfallbericht_' + plateSafe + '_' + dateStr + '.pdf';
+
+    // PDF lokal speichern (Backup)
+    doc.save(filename);
+
+    // PDF als Base64 für E-Mail-Versand
+    const pdfBase64 = doc.output('datauristring').split(',')[1];
+
+    const subject = 'Unfallbericht - ' + (S.vehicle?.plate||'') + ' - ' + g('aDate');
+    const message =
+      'Sehr geehrte Damen und Herren,\n\n' +
+      'anbei der Unfallbericht vom ' + g('aDate') + ' um ' + g('aTime') + ' Uhr.\n\n' +
+      'Fahrzeug:       ' + (S.vehicle?.name||'–') + ' (' + (S.vehicle?.plate||'–') + ')\n' +
+      'Kilometerstand: ' + (S.km ? S.km.toLocaleString('de-DE') + ' km' : '–') + '\n' +
+      'Unfallort:      ' + g('aLoc') + '\n' +
+      'Schadensart:    ' + (S.damage||'–') + '\n' +
+      'Unfallgegner:   ' + (g('oName')||'–') + ' | Kfz: ' + g('oPlate').toUpperCase() + '\n' +
+      'Versicherung:   ' + (g('oIns')||'–') + '\n\n' +
+      'Mit freundlichen Grüßen,\n' + g('dName') + '\n' + (g('dPhone') ? 'Tel: ' + g('dPhone') : '');
+
+    // E-Mail via Google Apps Script senden
+    showLoad('E-Mail wird gesendet...');
+    try {
+      // Content-Type: text/plain verhindert CORS-Preflight bei Google Apps Script
+      const payload = JSON.stringify({
+        to:         MAIL_TO,
+        pdf_base64: pdfBase64,
+        filename:   filename,
+        subject:    subject,
+        message:    message,
+        reply_to:   g('dPhone') ? g('dName') + ' (Tel: ' + g('dPhone') + ')' : g('dName')
+      });
+
+      const resp = await fetch('https://script.google.com/macros/s/AKfycbyD9ceTeu8s7P3-NYL4_Kt1eetxPiVuiO3L6ySOsjb3vJr0Kh7L5XRWyXQXK02Mhzxq/exec', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: payload,
+        redirect: 'follow'
+      });
+
+      let result = { status: 'ok' };
+      try { result = await resp.json(); } catch(e) { /* Script hat kein JSON zurückgegeben */ }
+      hideLoad();
+
+      if (result.status === 'ok' || resp.ok) {
+        // Erfolgs-Dialog
+        const box = document.createElement('div');
+        box.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+        box.innerHTML = `
+          <div style="background:#fff;border-radius:14px;padding:28px 24px;max-width:340px;width:100%;text-align:center;font-family:Tahoma,sans-serif">
+            <div style="font-size:52px;margin-bottom:12px">✅</div>
+            <div style="font-size:18px;font-weight:700;color:#1D1D1B;margin-bottom:8px">Bericht gesendet!</div>
+            <div style="font-size:13px;color:#6B8090;margin-bottom:20px">
+              Der Unfallbericht wurde automatisch an<br>
+              <strong style="color:#0560AB">${MAIL_TO}</strong><br>
+              gesendet.
+            </div>
+            <div style="background:#EBF1F5;border-radius:8px;padding:10px 12px;font-size:12px;color:#6B8090;margin-bottom:20px">
+              📄 ${filename}
+            </div>
+            <button onclick="this.closest('div[style]').remove()" 
+              style="background:#0560AB;color:#fff;border:none;border-radius:8px;padding:12px 32px;font-size:14px;font-weight:700;cursor:pointer;font-family:Tahoma,sans-serif;width:100%">
+              Schließen
+            </button>
+          </div>`;
+        document.body.appendChild(box);
+      } else {
+        throw new Error(result.message || 'Unbekannter Fehler');
+      }
+    } catch(mailErr) {
+      hideLoad();
+      // Fallback: mailto öffnen
+      const subj = encodeURIComponent(subject);
+      const body = encodeURIComponent(message + '\n\n[PDF lokal gespeichert als: ' + filename + ']');
+      window.open('mailto:' + MAIL_TO + '?subject=' + subj + '&body=' + body);
+      toast('Automatischer Versand fehlgeschlagen – Outlook geöffnet', 'err');
+      console.error('Mail error:', mailErr);
+    }
+
+  } catch(e) {
+    hideLoad();
+    toast('PDF-Fehler: ' + e.message, 'err');
+    console.error(e);
+  }
+}
+
+// ═══════════════════════════════
+// UTILS
+// ═══════════════════════════════
+function showLoad(t) { document.getElementById('spinTxt').textContent = t||'Bitte warten...'; document.getElementById('overlay').classList.add('show'); }
+function hideLoad() { document.getElementById('overlay').classList.remove('show'); }
+function toast(m, t) {
+  const el = document.getElementById('toast');
+  el.textContent = m; el.className = 'toast show' + (t ? ' ' + t : '');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// PWA
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
