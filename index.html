@@ -514,29 +514,17 @@ function applyLanguage(lang) {
 const MAIL_TO = 'logistik@wego-vti.de';
 
 // ═══════════════════════════════
-// WEBFLEET CONFIG
+// WEBFLEET CONFIG – über Proxy (Google Apps Script)
+// Zugangsdaten liegen NICHT mehr im Code, sondern sicher im Script-Projekt
 // ═══════════════════════════════
-const WF = {
-  account:  'wego',
-  username: 'Unfall',
-  password: 'Sigg2026+',
-  apikey:   '14905b0a-00ae-4adc-90e1-c6a9aa83780a',
-  base:     'https://csv.webfleet.com/extern'
-};
-
-function wfAuth() {
-  return 'Basic ' + btoa(WF.username + ':' + WF.password);
-}
-
-function wfUrl(action, extra) {
-  const p = new URLSearchParams({ account: WF.account, apikey: WF.apikey, action, outputformat: 'json', useISO8601: 'true', useUTF8: 'true', lang: 'de', ...extra });
-  return WF.base + '?' + p.toString();
-}
+const WF_PROXY_URL = 'https://script.google.com/macros/s/AKfycbyD9ceTeu8s7P3-NYL4_Kt1eetxPiVuiO3L6ySOsjb3vJr0Kh7L5XRWyXQXK02Mhzxq/exec';
 
 async function wfFetch(action, extra) {
-  const res = await fetch(wfUrl(action, extra || {}), { headers: { 'Authorization': wfAuth() } });
+  const params = new URLSearchParams({ mode: 'webfleet', action, ...(extra || {}) });
+  const res = await fetch(WF_PROXY_URL + '?' + params.toString());
   const data = await res.json();
   if (data.errorCode) throw new Error('Webfleet Fehler ' + data.errorCode + ': ' + data.errorMsg);
+  if (data.status === 'error') throw new Error(data.message || 'Proxy-Fehler');
   return Array.isArray(data) ? data : (data.records || data);
 }
 
