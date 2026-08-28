@@ -1048,12 +1048,12 @@ function buildSummary() {
       <div class="srow"><span class="k">${t('sum_k_ort')}</span><span class="v">${g('aLoc')}</span></div>
       <div class="srow"><span class="k">${t('sum_k_schadensart')}</span><span class="v">${translateDamage(S.damage)}</span></div>
     </div>
-    \${(S.schadenart==='Fahrzeugschaden') ? '<div class=\"sblock\"><h3>' + t('sum_gegner_fzg') + '</h3>' +
+    ${(S.schadenart==='Fahrzeugschaden') ? '<div class=\"sblock\"><h3>' + t('sum_gegner_fzg') + '</h3>' +
       '<div class=\"srow\"><span class=\"k\">' + t('sum_k_kennzeichen') + '</span><span class=\"v\">' + (g('oPlate').toUpperCase()||'–') + '</span></div>' +
       '<div class=\"srow\"><span class=\"k\">' + t('sum_k_halter') + '</span><span class=\"v\">' + (g('oHolderName')||'–') + '</span></div>' +
       '<div class=\"srow\"><span class=\"k\">' + t('sum_fahrer').replace(/^[^ ]+ /,'') + '</span><span class=\"v\">' + (g('oName')||'–') + '</span></div>' +
       '<div class=\"srow\"><span class=\"k\">' + t('sum_k_versicherung') + '</span><span class=\"v\">' + (g('oIns')||'–') + '</span></div></div>' : ''}
-    \${(S.schadenart==='Sachschaden') ? '<div class=\"sblock\"><h3>' + t('sum_geschaedigter') + '</h3>' +
+    ${(S.schadenart==='Sachschaden') ? '<div class=\"sblock\"><h3>' + t('sum_geschaedigter') + '</h3>' +
       '<div class=\"srow\"><span class=\"k\">' + t('sum_k_name') + '</span><span class=\"v\">' + (g('sDmgName')||'–') + '</span></div>' +
       '<div class=\"srow\"><span class=\"k\">' + t('sum_k_anschrift') + '</span><span class=\"v\">' + (g('sDmgAddr')||'–') + '</span></div>' +
       '<div class=\"srow\"><span class=\"k\">' + t('sum_k_telefon') + '</span><span class=\"v\">' + (g('sDmgPhone')||'–') + '</span></div></div>' : ''}
