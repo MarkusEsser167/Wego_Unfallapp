@@ -1,7 +1,7 @@
 {
-  "name": "WeGo VTI Unfallaufnahme",
+  "name": "wego vti Unfallaufnahme",
   "short_name": "Unfallaufnahme",
-  "description": "Unfallbericht-App für WeGo VTI LKW-Fahrer",
+  "description": "Unfallbericht-App für wego vti LKW-Fahrer",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
