@@ -533,7 +533,26 @@ async function wfFetch(action, extra) {
 // ═══════════════════════════════
 const S = { screen: 1, vehicle: null, km: null, photos: [], damage: '', schadenart: '', allVehicles: [], groups: [], currentGroup: null };
 
-const NDL_MAIL = {"101": "bremen@wego-vti.de", "102": "bremerhaven@wego-vti.de", "103": "oldenburg@wego-vti.de", "104": "herford@wego-vti.de", "105": "paderborn@wego-vti.de", "106": "muenster@wego-vti.de", "107": "kiel@wego-vti.de", "108": "fuldabrueck@wego-vti.de", "110": "magdeburg@wego-vti.de", "111": "berlin@wego-vti.de", "112": "rostock@wego-vti.de", "116": "hannover@wego-vti.de", "117": "hamburg@wego-vti.de", "120": "westerkappeln@wego-vti.de", "122": "leipzig@wego-vti.de", "130": "dortmund@wego-vti.de", "151": "chemnitz@wego-vti.de", "810": "hanau@wego-vti.de", "812": "frankfurtmain@wego-vti.de", "815": "ulm@wego-vti.de", "817": "vtifreiburg@wego-vti.de", "819": "Elsenfeld@wego-vti.de", "821": "vtieching@wego-vti.de", "822": "vtiberlin@wego-vti.de", "823": "vtioberhausen@wego-vti.de", "835": "frankfurtoder@wego-vti.de", "839": "merzig@wego-vti.de", "840": "halle@wego-vti.de", "841": "brandenburg@wego-vti.de", "844": "dresden@wego-vti.de", "845": "bautzen@wego-vti.de", "848": "merzig@wego-vti.de", "867": "schwerin@wego-vti.de", "872": "nuernberg@wego-vti.de", "873": "eching@wego-vti.de", "875": "erfurt@wego-vti.de", "878": "erfurt@wego-vti.de", "880": "giessen@wego-vti.de", "881": "vtiludwigshafen@wego-vti.de", "884": "ilsfeld@wego-vti.de", "885": "viernheim@wego-vti.de", "886": "ettlingen@wego-vti.de", "887": "vtiettlingen@wego-vti.de", "888": "info.zentrallager@wego-vti.de", "889": "vtikoefering@wego-vti.de", "891": "vtikoeln@wego-vti.de", "895": "eschweiler@wego-vti.de", "896": "koeln@wego-vti.de", "897": "moenchengladbach@wego-vti.de"};
+// Standort-Verteiler. Pflegequelle ist die Excel "NL Mail.xlsx";
+// daraus wird ndl.json erzeugt und beim Start geladen.
+// Die folgende Liste ist nur die Rueckfallebene, falls ndl.json fehlt
+// oder das Geraet offline startet.
+let NDL = {"101":{"name":"Niederlassung Bremen","mail":"bremen@wego-vti.de","vl":"marc.rohleder@wego-vti.de"},"102":{"name":"Niederlassung Bremerhaven","mail":"bremerhaven@wego-vti.de","vl":"marc.rohleder@wego-vti.de"},"103":{"name":"Niederlassung Oldenburg","mail":"oldenburg@wego-vti.de","vl":"marc.rohleder@wego-vti.de"},"105":{"name":"Niederlassung Paderborn","mail":"paderborn@wego-vti.de","vl":"marc.rohleder@wego-vti.de"},"106":{"name":"Niederlassung Münster","mail":"muenster@wego-vti.de","vl":"marc.rohleder@wego-vti.de"},"107":{"name":"Niederlassung Kiel","mail":"kiel@wego-vti.de","vl":"marc.rohleder@wego-vti.de"},"108":{"name":"Niederlassung Fuldabrück","mail":"fuldabrueck@wego-vti.de","vl":"marc.rohleder@wego-vti.de"},"110":{"name":"Niederlassung Magdeburg","mail":"magdeburg@wego-vti.de","vl":"marc.rohleder@wego-vti.de"},"111":{"name":"Niederlassung Berlin","mail":"berlin@wego-vti.de","vl":"marc.rohleder@wego-vti.de"},"112":{"name":"Niederlassung Rostock","mail":"rostock@wego-vti.de","vl":"marc.rohleder@wego-vti.de"},"116":{"name":"Niederlassung Hannover","mail":"hannover@wego-vti.de","vl":"marc.rohleder@wego-vti.de"},"117":{"name":"Niederlassung Hamburg","mail":"hamburg@wego-vti.de","vl":"marc.rohleder@wego-vti.de"},"120":{"name":"Niederlassung Westerkappeln -Velpe","mail":"westerkappeln@wego-vti.de","vl":"marc.rohleder@wego-vti.de"},"122":{"name":"Niederlassung Leipzig","mail":"leipzig@wego-vti.de","vl":"wolfgang.franz@wego-vti.de"},"130":{"name":"Niederlassung Dortmund","mail":"dortmund@wego-vti.de","vl":"marc.rohleder@wego-vti.de"},"151":{"name":"Niederlassung Chemnitz","mail":"chemnitz@wego-vti.de","vl":"wolfgang.franz@wego-vti.de"},"411":{"name":"Außenlager München-Sendling Wego","mail":"muenchen@wego-vti.de","vl":"wolfgang.franz@wego-vti.de"},"412":{"name":"Außenlager Dresden Wego","mail":"dresden@wego-vti.de","vl":"wolfgang.franz@wego-vti.de"},"413":{"name":"Außenlager Olbersdorf","mail":"bautzen@wego-vti.de","vl":"wolfgang.franz@wego-vti.de"},"414":{"name":"Außenlager Hanau/FFM","mail":"hanau@wego-vti.de","vl":"dominic.stuhldreher@wego-vti.de"},"417":{"name":"Außenlager Olching VTI","mail":"vtiolching@wego-vti.de","vl":"wolfgang.franz@wego-vti.de"},"810":{"name":"Niederlassung Hanau","mail":"hanau@wego-vti.de","vl":"dominic.stuhldreher@wego-vti.de"},"812":{"name":"Niederlassung Frankfurt/Main","mail":"frankfurtmain@wego-vti.de","vl":"dominic.stuhldreher@wego-vti.de"},"815":{"name":"Niederlassung Neu-Ulm","mail":"ulm@wego-vti.de","vl":"dominic.stuhldreher@wego-vti.de"},"817":{"name":"Niederlassung VTI-Freiburg","mail":"vtifreiburg@wego-vti.de","vl":"dominic.stuhldreher@wego-vti.de"},"819":{"name":"Elsenfeld","mail":"Elsenfeld@wego-vti.de","vl":"dominic.stuhldreher@wego-vti.de"},"821":{"name":"Niederlassung München Eching VTI","mail":"vtieching@wego-vti.de","vl":"wolfgang.franz@wego-vti.de"},"822":{"name":"Niederlassung VTI-Berlin","mail":"vtiberlin@wego-vti.de","vl":"marc.rohleder@wego-vti.de"},"823":{"name":"Niederlassung Oberhausen","mail":"vtioberhausen@wego-vti.de","vl":"marc.rohleder@wego-vti.de"},"835":{"name":"Niederlassung Frankfurt/Oder","mail":"frankfurtoder@wego-vti.de","vl":"marc.rohleder@wego-vti.de"},"840":{"name":"Niederlassung Wego/VTI Halle","mail":"halle@wego-vti.de","vl":"wolfgang.franz@wego-vti.de"},"841":{"name":"Niederlassung Brandenburg","mail":"brandenburg@wego-vti.de","vl":"marc.rohleder@wego-vti.de"},"844":{"name":"Niederlassung Dresden","mail":"dresden@wego-vti.de","vl":"wolfgang.franz@wego-vti.de"},"845":{"name":"Niederlassung Bautzen","mail":"bautzen@wego-vti.de","vl":"wolfgang.franz@wego-vti.de"},"848":{"name":"Niederlassung Merzig","mail":"merzig@wego-vti.de","vl":"dominic.stuhldreher@wego-vti.de"},"867":{"name":"Niederlassung Schwerin","mail":"schwerin@wego-vti.de","vl":"marc.rohleder@wego-vti.de"},"872":{"name":"Niederlassung Nürnberg","mail":"nuernberg@wego-vti.de","vl":"wolfgang.franz@wego-vti.de"},"873":{"name":"Niederlassung München Eching Wego","mail":"eching@wego-vti.de","vl":"wolfgang.franz@wego-vti.de"},"875":{"name":"Außenlager Suhl Wego","mail":"erfurt@wego-vti.de","vl":"wolfgang.franz@wego-vti.de"},"878":{"name":"Niederlassung Erfurt","mail":"erfurt@wego-vti.de","vl":"wolfgang.franz@wego-vti.de"},"880":{"name":"Niederlassung Gießen","mail":"giessen@wego-vti.de","vl":"dominic.stuhldreher@wego-vti.de"},"881":{"name":"Niederlassung Ludwigshafen","mail":"vtiludwigshafen@wego-vti.de","vl":"dominic.stuhldreher@wego-vti.de"},"884":{"name":"Niederlassung Abstatt","mail":"ilsfeld@wego-vti.de","vl":"dominic.stuhldreher@wego-vti.de"},"885":{"name":"Niederlassung Viernheim","mail":"viernheim@wego-vti.de","vl":"dominic.stuhldreher@wego-vti.de"},"886":{"name":"Niederlassung Ettlingen","mail":"ettlingen@wego-vti.de","vl":"dominic.stuhldreher@wego-vti.de"},"887":{"name":"Niederlassungen Ettlingen vti","mail":"vtiettlingen@wego-vti.de","vl":"dominic.stuhldreher@wego-vti.de"},"888":{"name":"Zentrallager Viernheim","mail":"info.zentrallager@wego-vti.de","vl":"dominic.stuhldreher@wego-vti.de"},"889":{"name":"Niederlassung Köfering-Regensburg","mail":"vtikoefering@wego-vti.de","vl":"wolfgang.franz@wego-vti.de"},"891":{"name":"Niederlassung Köln-Niehl","mail":"vtikoeln@wego-vti.de","vl":"marc.rohleder@wego-vti.de"},"895":{"name":"Niederlassung Eschweiler","mail":"eschweiler@wego-vti.de","vl":"marc.rohleder@wego-vti.de"},"896":{"name":"Niederlassung Köln-Rodenkirchen","mail":"koeln@wego-vti.de","vl":"marc.rohleder@wego-vti.de"},"897":{"name":"Niederlassung Mönchengladbach","mail":"moenchengladbach@wego-vti.de","vl":"marc.rohleder@wego-vti.de"}};
+
+async function loadNdl() {
+  try {
+    const r = await fetch('ndl.json', { cache: 'no-cache' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    if (d && typeof d === 'object' && Object.keys(d).length) {
+      NDL = d;
+      console.info('ndl.json geladen: ' + Object.keys(d).length + ' Standorte');
+    }
+  } catch (e) {
+    console.warn('ndl.json nicht geladen, nutze eingebaute Liste:', e);
+  }
+}
+loadNdl();
 
 // Init date/time
 const now = new Date();
@@ -1439,6 +1458,8 @@ async function createPDF() {
       const ccList = ['hse@wego-vti.de'];
       const standortMail = getStandortMail();
       if (standortMail) ccList.push(standortMail);
+      const vlMail = getVertriebsleiterMail();
+      if (vlMail && ccList.indexOf(vlMail) === -1) ccList.push(vlMail);
 
       const payload = JSON.stringify({
         to:            MAIL_TO,
@@ -1448,7 +1469,7 @@ async function createPDF() {
         docx_base64:   docxBase64,
         docx_filename: docxFilename,
         subject:       subject,
-        message:       message + (standortMail ? '\n\nStandort-CC: ' + standortMail : ''),
+        message:       message + '\n\nCC: ' + ccList.join(', '),
         reply_to:      g('dPhone') ? g('dName') + ' (Tel: ' + g('dPhone') + ')' : g('dName')
       });
 
@@ -1479,7 +1500,7 @@ async function createPDF() {
             <div style="background:#EBF1F5;border-radius:8px;padding:10px 12px;font-size:12px;color:#6B8090;margin-bottom:20px">
               📄 ${filename}<br>
               📝 ${docxFilename}<br>
-              <span style="font-size:11px;color:#6B8090">CC: hse@wego-vti.de${standortMail ? ', ' + standortMail : ''}</span>
+              <span style="font-size:11px;color:#6B8090">CC: ${ccList.join(', ')}</span>
             </div>
             <button onclick="this.closest('div[style]').remove()" 
               style="background:#0560AB;color:#fff;border:none;border-radius:8px;padding:12px 32px;font-size:14px;font-weight:700;cursor:pointer;font-family:Tahoma,sans-serif;width:100%">
@@ -1510,12 +1531,22 @@ async function createPDF() {
 // ═══════════════════════════════
 // UTILS
 // ═══════════════════════════════
-function getStandortMail() {
+function getStandortEntry() {
   // NDL aus aktueller Gruppe (erste 3 Ziffern des Gruppennamens)
   if (!S.currentGroup) return null;
   const match = S.currentGroup.name.match(/^(\d{3})/);
   if (!match) return null;
-  return NDL_MAIL[match[1]] || null;
+  return NDL[match[1]] || null;
+}
+
+function getStandortMail() {
+  const e = getStandortEntry();
+  return e && e.mail ? e.mail : null;
+}
+
+function getVertriebsleiterMail() {
+  const e = getStandortEntry();
+  return e && e.vl ? e.vl : null;
 }
 
 function showLoad(t) { document.getElementById('spinTxt').textContent = t||'Bitte warten...'; document.getElementById('overlay').classList.add('show'); }
