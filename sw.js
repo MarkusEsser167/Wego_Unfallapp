@@ -1,7 +1,7 @@
 // Neuer Cache-Name loest auf den Geraeten das Update aus: die App laedt
 // index.html cache-zuerst, ohne geaenderte sw.js kaeme eine neue Fassung
 // nie an.
-const CACHE = 'wego-unfallapp-v3';
+const CACHE = 'wego-unfallapp-v4';
 // Nur eigene Altbestaende aufraeumen. Die Testversion liegt auf derselben
 // Origin (Caches 'wego-unfallapp-test-...') und darf nicht mitgeloescht werden.
 const CACHE_PREFIX = 'wego-unfallapp-v';
