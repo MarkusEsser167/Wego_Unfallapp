@@ -1627,6 +1627,7 @@ function buildSummary() {
   document.getElementById('sumContent').innerHTML = `
     <div class="sblock"><h3>${t('sum_fahrzeug')}</h3>
       <div class="srow"><span class="k">${t('sum_k_fahrzeug')}</span><span class="v">${S.vehicle?.name||'–'}</span></div>
+      <div class="srow"><span class="k">${t('label_niederlassung')}</span><span class="v">${standortText(' – ')}</span></div>
       <div class="srow"><span class="k">${t('sum_k_webfleet_einheit')}</span><span class="v">${S.vehicle?.plate||'–'}</span></div>
       <div class="srow"><span class="k">${t('sum_k_km')}</span><span class="v">${S.km?S.km.toLocaleString('de-DE')+' km':'–'}</span></div>
     </div>
@@ -1845,6 +1846,7 @@ async function generateDocxBase64() {
   body += heading('1. Fahrzeug', 2);
   body += table(
     row('Kennzeichen', S.vehicle?.name) +
+    row('Standort', standortText(' - ')) +
     row('Webfleet Einheit', S.vehicle?.plate) +
     row('Kilometerstand', S.km ? S.km.toLocaleString('de-DE') + ' km' : '–')
   );
@@ -2074,7 +2076,8 @@ async function createPDF() {
     } else {
 
     sec('FAHRZEUG');
-    row('Kennzeichen', S.vehicle?.name); row('Webfleet Einheit', S.vehicle?.plate);
+    row('Kennzeichen', S.vehicle?.name); row('Standort', standortText(' - '));
+    row('Webfleet Einheit', S.vehicle?.plate);
     row('Kilometerstand', S.km ? S.km.toLocaleString('de-DE') + ' km' : '–');
     y += 3;
 
@@ -2225,6 +2228,7 @@ async function createPDF() {
       : 'Sehr geehrte Damen und Herren,\n\n' +
         'anbei der Unfallbericht vom ' + g('aDate') + ' um ' + g('aTime') + ' Uhr.\n\n' +
         'Fahrzeug:       ' + (S.vehicle?.name||'–') + ' (' + (S.vehicle?.plate||'–') + ')\n' +
+        'Standort:       ' + standortText(' - ') + '\n' +
         'Kilometerstand: ' + (S.km ? S.km.toLocaleString('de-DE') + ' km' : '–') + '\n' +
         'Unfallort:      ' + g('aLoc') + '\n' +
         'Schadensart:    ' + (S.damage||'–') + '\n' +
@@ -2321,6 +2325,15 @@ async function createPDF() {
 // ═══════════════════════════════
 // UTILS
 // ═══════════════════════════════
+// Standort fuer den Fuhrparkbericht: "884 - Niederlassung Abstatt".
+// Nummer und Name aus ndl.json ueber S.standortNr (Webfleet-Gruppe oder
+// Pflichtauswahl in Schritt 2).
+function standortText(trenner) {
+  if (!S.standortNr) return '–';
+  const e = NDL[S.standortNr];
+  return e && e.name ? S.standortNr + trenner + e.name : String(S.standortNr);
+}
+
 function getStandortEntry() {
   // Lager: die Niederlassung haengt am Stapler selbst (aus stapler.json)
   if (S.mode === 'lager') {
